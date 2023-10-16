@@ -1,0 +1,110 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+class Anagram {
+    private static final int TABLE_SIZE = 10007; // Prime number for better distribution
+    private List<String>[] hashTable = new List[TABLE_SIZE];
+
+    public Anagram(String vocabularyFileName) {
+        loadVocabulary(vocabularyFileName);
+    }
+
+    private void loadVocabulary(String fileName) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
+            String line = reader.readLine();
+            int numWords = Integer.parseInt(line);
+            for (int i = 0; i < numWords; i++) {
+                line = reader.readLine();
+                insertWord(line);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private int customHash(String word) {
+        // Your custom hash function goes here
+        int hash = 0;
+        for (char c : word.toCharArray()) {
+            hash += c;
+        }
+        return hash % TABLE_SIZE;
+    }
+
+    private void insertWord(String word) {
+        int hash = customHash(word);
+        if (hashTable[hash] == null) {
+            hashTable[hash] = new ArrayList<>();
+        }
+        hashTable[hash].add(word);
+    }
+
+    private boolean areAnagrams(String word1, String word2) {
+        char[] w1 = word1.toCharArray();
+        char[] w2 = word2.toCharArray();
+        Arrays.sort(w1);
+        Arrays.sort(w2);
+        return Arrays.equals(w1, w2);
+    }
+
+    private boolean isWordInVocabulary(String word) {
+        int hash = customHash(word);
+        if (hashTable[hash] == null) {
+            return false;
+        }
+        for (String dictWord : hashTable[hash]) {
+            if (areAnagrams(dictWord, word)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void findAnagrams(String inputFileName) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(inputFileName)) {
+            String line = reader.readLine();
+            int numInputs = Integer.parseInt(line);
+            for (int i = 0; i < numInputs; i++) {
+                line = reader.readLine();
+                List<String> words = new ArrayList<>(Arrays.asList(line.split(" ")));
+                findAndPrintAnagrams(words, new ArrayList<>(), words.size());
+                System.out.println("-1");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void findAndPrintAnagrams(List<String> words, List<String> currentAnagram, int remaining) {
+        if (remaining == 0) {
+            System.out.println(String.join(" ", currentAnagram));
+        } else {
+            for (String word : words) {
+                if (!currentAnagram.contains(word)) {
+                    currentAnagram.add(word);
+                    if (isWordInVocabulary(String.join("", currentAnagram))) {
+                        findAndPrintAnagrams(words, currentAnagram, remaining - 1);
+                    }
+                    currentAnagram.remove(currentAnagram.size() - 1);
+                }
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        if (args.length != 2) {
+            System.out.println("Usage: java Anagram vocabulary.txt input.txt");
+            return;
+        }
+
+        String vocabularyFileName = args[0];
+        String inputFileName = args[1];
+
+        Anagram anagram = new Anagram(vocabularyFileName);
+        anagram.findAnagrams(inputFileName);
+    }
+}
